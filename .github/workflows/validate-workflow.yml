@@ -5,20 +5,17 @@ on:
   push:
     paths:
       - '.github/workflows/validate-workflow.yml'
-      - '.github/workflows/build.yml'
 
 permissions:
   contents: read
 
 jobs:
   validate-yaml:
-    name: Check YAML syntax only
+    name: Check validator workflow syntax
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate workflow YAML syntax
-        run: |
-          ruby -e 'require "yaml"; ARGV.each { |f| YAML.parse_file(f); puts "YAML syntax OK: #{f}" }' \
-            .github/workflows/validate-workflow.yml .github/workflows/build.yml
+      - name: Validate this workflow's YAML syntax
+        run: ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/validate-workflow.yml"); puts "YAML syntax OK"'

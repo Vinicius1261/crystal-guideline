@@ -110,21 +110,24 @@ jobs:
             else
               # MediaFire share pages expose the real download URL in the downloadButton anchor.
               python3 - "$APK_URL" .tmp/first_download > .tmp/direct_url <<'PY'
-import html, re, sys
+import html, sys
+from html.parser import HTMLParser
 from urllib.parse import urljoin
 page_url, path = sys.argv[1], sys.argv[2]
-data = open(path, encoding="utf-8", errors="ignore").read()
-patterns = [
-    r'<a[^>]*id=["\\']downloadButton["\\'][^>]*href=["\\']([^"\\']+)',
-    r'<a[^>]*href=["\\']([^"\\']+)["\\'][^>]*id=["\\']downloadButton["\\']',
-]
-for pattern in patterns:
-    match = re.search(pattern, data, re.I)
-    if match:
-        print(urljoin(page_url, html.unescape(match.group(1))))
-        break
-else:
+class DownloadLinkParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.href = None
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "a" and attrs.get("id") == "downloadButton" and attrs.get("href"):
+            self.href = attrs["href"]
+parser = DownloadLinkParser()
+with open(path, encoding="utf-8", errors="ignore") as f:
+    parser.feed(f.read())
+if not parser.href:
     raise SystemExit("Não consegui localizar o link direto de download na página.")
+print(urljoin(page_url, html.unescape(parser.href)))
 PY
               DIRECT_URL="$(cat .tmp/direct_url)"
               test -n "$DIRECT_URL"
